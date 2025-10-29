@@ -3,11 +3,11 @@ provider "aws" {
 }
 
 provider "helm" {
-  kubernetes {
+  kubernetes = {
     host                   = module.eks.cluster_endpoint
     cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
 
-    exec {
+    exec = {
       api_version = "client.authentication.k8s.io/v1beta1"
       command     = "aws"
       # This requires the awscli to be installed locally where Terraform is executed
@@ -87,15 +87,13 @@ module "helm_release_irsa" {
     {
       name  = "aws.defaultInstanceProfile"
       value = aws_iam_instance_profile.karpenter.name
+    },
+    {
+      # Set the annotation for IRSA using the role created in this module
+      name                  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+      value_is_iam_role_arn = true
     }
   ]
-
-  set_irsa_names = ["serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"]
-  # # Equivalent to the following but the ARN is only known internally to the module
-  # set = [{
-  #   name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-  #   value = iam_role_arn.this[0].arn
-  # }]
 
   # IAM role for service account (IRSA)
   create_role = true
@@ -151,11 +149,11 @@ module "disabled" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 19.16"
+  version = "~> 21.0"
 
-  cluster_name                   = local.name
-  cluster_version                = "1.27"
-  cluster_endpoint_public_access = true
+  name                   = local.name
+  kubernetes_version     = "1.34"
+  endpoint_public_access = true
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
@@ -180,7 +178,7 @@ module "eks" {
 
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "~> 5.0"
+  version = "~> 6.0"
 
   name = local.name
   cidr = local.vpc_cidr
