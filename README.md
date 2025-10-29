@@ -8,7 +8,7 @@ Terraform module which provisions an addon ([Helm release](https://registry.terr
 
 ```hcl
 module "eks_blueprints_addon" {
-  source = "aws-ia/eks-blueprints-addon/aws"
+  source = "aws-blueprints/eks-blueprints-addon/aws"
   version = "~> 1.0" #ensure to update this to the latest/desired version
 
   chart            = "karpenter"
@@ -65,7 +65,7 @@ module "eks_blueprints_addon" {
 
 ```hcl
 module "eks_blueprints_addon" {
-  source = "aws-ia/eks-blueprints-addon/aws"
+  source = "aws-blueprints/eks-blueprints-addon/aws"
   version = "~> 1.0" #ensure to update this to the latest/desired version
 
   chart         = "metrics-server"
@@ -96,7 +96,7 @@ module "eks_blueprints_addon" {
 
 ```hcl
 module "eks_blueprints_addon" {
-  source = "aws-ia/eks-blueprints-addon/aws"
+  source = "aws-blueprints/eks-blueprints-addon/aws"
   version = "~> 1.0" #ensure to update this to the latest/desired version
 
   # Disable helm release
@@ -129,25 +129,25 @@ module "eks_blueprints_addon" {
 > [!IMPORTANT]
 > EKS Blueprints for Terraform is maintained by AWS Solution Architects. It is not part of an AWS
 > service and support is provided as a best-effort by the EKS Blueprints community. To provide feedback,
-> please use the [issues templates](https://github.com/aws-ia/terraform-aws-eks-blueprints-addon/issues)
+> please use the [issues templates](https://github.com/aws-blueprints/terraform-aws-eks-blueprints-addon/issues)
 > provided. If you are interested in contributing to EKS Blueprints, see the
-> [Contribution guide](https://github.com/aws-ia/terraform-aws-eks-blueprints-addon/blob/main/.github/CONTRIBUTING.md).
+> [Contribution guide](https://github.com/aws-blueprints/terraform-aws-eks-blueprints-addon/blob/main/.github/CONTRIBUTING.md).
 
-<!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+<!-- BEGIN_TF_DOCS -->
 ## Requirements
 
 | Name | Version |
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 4.47 |
-| <a name="requirement_helm"></a> [helm](#requirement\_helm) | >= 2.9 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 4.47, < 6.0 |
+| <a name="requirement_helm"></a> [helm](#requirement\_helm) | >= 2.9, < 3.0 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 4.47 |
-| <a name="provider_helm"></a> [helm](#provider\_helm) | >= 2.9 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 4.47, < 6.0 |
+| <a name="provider_helm"></a> [helm](#provider\_helm) | >= 2.9, < 3.0 |
 
 ## Modules
 
@@ -248,14 +248,12 @@ No modules.
 | <a name="output_revision"></a> [revision](#output\_revision) | Version is an int32 which represents the version of the release |
 | <a name="output_values"></a> [values](#output\_values) | The compounded values from `values` and `set*` attributes |
 | <a name="output_version"></a> [version](#output\_version) | A SemVer 2 conformant version string of the chart |
-<!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+<!-- END_TF_DOCS -->
 
 ## Community
 
-- [Code of conduct](.github/CODE_OF_CONDUCT.md)
 - [Contributing](.github/CONTRIBUTING.md)
-- [Security issue notifications](.github/CONTRIBUTING.md#security-issue-notifications)
 
 ## License
 
-Apache-2.0 Licensed. See [LICENSE](https://github.com/aws-ia/terraform-aws-eks-blueprints-addon/blob/main/LICENSE).
+Apache-2.0 Licensed. See [LICENSE](https://github.com/aws-blueprints/terraform-aws-eks-blueprints-addon/blob/main/LICENSE).

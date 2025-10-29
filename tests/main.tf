@@ -31,7 +31,7 @@ locals {
 
   tags = {
     Example    = local.name
-    GithubRepo = "aws-ia/terraform-aws-eks-blueprints-addon"
+    GithubRepo = "aws-blueprints/terraform-aws-eks-blueprints-addon"
   }
 }
 
