@@ -12,7 +12,7 @@ Please consult the `tests` directory for reference configurations. If you find a
   ```hcl
   set = [
     {
-      name             = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+      name                  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
       value_is_iam_role_arn = true
     }
   ]
