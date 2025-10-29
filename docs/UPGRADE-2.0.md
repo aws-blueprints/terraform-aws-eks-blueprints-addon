@@ -18,6 +18,8 @@ Please consult the `tests` directory for reference configurations. If you find a
   ]
   ```
 
+- The `allow_self_assume_role` variable and associated trust policy statement has been removed; the addon should not need to assume its own role.
+
 ## Additional changes
 
 ### Added
@@ -37,6 +39,7 @@ Please consult the `tests` directory for reference configurations. If you find a
 1. Removed variables:
 
     - `set_irsa_names`
+    - `allow_self_assume_role`
 
 2. Renamed variables:
 
