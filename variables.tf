@@ -20,26 +20,8 @@ variable "create_release" {
   default     = true
 }
 
-variable "name" {
-  description = "Name of the Helm release"
-  type        = string
-  default     = ""
-}
-
-variable "description" {
-  description = "Set release description attribute (visible in the history)"
-  type        = string
-  default     = null
-}
-
-variable "namespace" {
-  description = "The namespace to install the release into. Defaults to `default`"
-  type        = string
-  default     = null
-}
-
-variable "create_namespace" {
-  description = "Create the namespace if it does not yet exist. Defaults to `false`"
+variable "atomic" {
+  description = "If set, installation process purges chart on fail. The wait flag will be set automatically if atomic is used. Defaults to `false`"
   type        = bool
   default     = null
 }
@@ -50,56 +32,26 @@ variable "chart" {
   default     = ""
 }
 
-variable "chart_version" {
-  description = "Specify the exact chart version to install. If this is not specified, the latest version is installed"
-  type        = string
+variable "cleanup_on_fail" {
+  description = "Allow deletion of new resources created in this upgrade when upgrade fails. Defaults to `false`"
+  type        = bool
   default     = null
 }
 
-variable "repository" {
-  description = "Repository URL where to locate the requested chart"
-  type        = string
+variable "create_namespace" {
+  description = "Create the namespace if it does not yet exist. Defaults to `false`"
+  type        = bool
   default     = null
 }
 
-variable "values" {
-  description = "List of values in raw yaml to pass to helm. Values will be merged, in order, as Helm does with multiple `-f` options"
-  type        = list(string)
+variable "dependency_update" {
+  description = "Runs helm dependency update before installing the chart. Defaults to `false`"
+  type        = bool
   default     = null
 }
 
-variable "timeout" {
-  description = "Time in seconds to wait for any individual kubernetes operation (like Jobs for hooks). Defaults to `300` seconds"
-  type        = number
-  default     = null
-}
-
-variable "repository_key_file" {
-  description = "The repositories cert key file"
-  type        = string
-  default     = null
-}
-
-variable "repository_cert_file" {
-  description = "The repositories cert file"
-  type        = string
-  default     = null
-}
-
-variable "repository_ca_file" {
-  description = "The Repositories CA File"
-  type        = string
-  default     = null
-}
-
-variable "repository_username" {
-  description = "Username for HTTP basic authentication against the repository"
-  type        = string
-  default     = null
-}
-
-variable "repository_password" {
-  description = "Password for HTTP basic authentication against the repository"
+variable "description" {
+  description = "Set release description attribute (visible in the history)"
   type        = string
   default     = null
 }
@@ -110,32 +62,20 @@ variable "devel" {
   default     = null
 }
 
-variable "verify" {
-  description = "Verify the package before installing it. Helm uses a provenance file to verify the integrity of the chart; this must be hosted alongside the chart. For more information see the Helm Documentation. Defaults to `false`"
+variable "disable_crd_hooks" {
+  description = "Prevent CRD hooks from, running, but run other hooks. See `helm install --no-crd-hook`"
   type        = bool
   default     = null
 }
 
-variable "keyring" {
-  description = "Location of public keys used for verification. Used only if verify is true. Defaults to `/.gnupg/pubring.gpg` in the location set by `home`"
-  type        = string
+variable "disable_openapi_validation" {
+  description = "If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema. Defaults to `false`"
+  type        = bool
   default     = null
 }
 
 variable "disable_webhooks" {
   description = "Prevent hooks from running. Defaults to `false`"
-  type        = bool
-  default     = null
-}
-
-variable "reuse_values" {
-  description = "When upgrading, reuse the last release's values and merge in any overrides. If `reset_values` is specified, this is ignored. Defaults to `false`"
-  type        = bool
-  default     = null
-}
-
-variable "reset_values" {
-  description = "When upgrading, reset the values to the ones built into the chart. Defaults to `false`"
   type        = bool
   default     = null
 }
@@ -146,14 +86,14 @@ variable "force_update" {
   default     = null
 }
 
-variable "recreate_pods" {
-  description = "Perform pods restart during upgrade/rollback. Defaults to `false`"
-  type        = bool
+variable "keyring" {
+  description = "Location of public keys used for verification. Used only if verify is true. Defaults to `/.gnupg/pubring.gpg` in the location set by `home`"
+  type        = string
   default     = null
 }
 
-variable "cleanup_on_fail" {
-  description = "Allow deletion of new resources created in this upgrade when upgrade fails. Defaults to `false`"
+variable "lint" {
+  description = "Run the helm chart linter during the plan. Defaults to `false`"
   type        = bool
   default     = null
 }
@@ -164,14 +104,35 @@ variable "max_history" {
   default     = null
 }
 
-variable "atomic" {
-  description = "If set, installation process purges chart on fail. The wait flag will be set automatically if atomic is used. Defaults to `false`"
+variable "name" {
+  description = "Name of the Helm release"
+  type        = string
+  default     = ""
+}
+
+variable "namespace" {
+  description = "The namespace to install the release into. Defaults to `default`"
+  type        = string
+  default     = null
+}
+
+variable "pass_credentials" {
+  description = "Pass credentials to all domains. Defaults to `false`"
   type        = bool
   default     = null
 }
 
-variable "skip_crds" {
-  description = "If set, no CRDs will be installed. By default, CRDs are installed if not already present. Defaults to `false`"
+variable "postrender" {
+  description = "Configure a command to run after helm renders the manifest which can alter the manifest contents"
+  type = object({
+    args        = optional(list(string))
+    binary_path = string
+  })
+  default = null
+}
+
+variable "recreate_pods" {
+  description = "Perform pods restart during upgrade/rollback. Defaults to `false`"
   type        = bool
   default     = null
 }
@@ -182,9 +143,145 @@ variable "render_subchart_notes" {
   default     = null
 }
 
-variable "disable_openapi_validation" {
-  description = "If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema. Defaults to `false`"
+variable "replace" {
+  description = "Re-use the given name, only if that name is a deleted release which remains in the history. This is unsafe in production. Defaults to `false`"
   type        = bool
+  default     = null
+}
+
+variable "repository" {
+  description = "Repository URL where to locate the requested chart"
+  type        = string
+  default     = null
+}
+
+variable "repository_ca_file" {
+  description = "The Repositories CA File"
+  type        = string
+  default     = null
+}
+
+variable "repository_cert_file" {
+  description = "The repositories cert file"
+  type        = string
+  default     = null
+}
+
+variable "repository_key_file" {
+  description = "The repositories cert key file"
+  type        = string
+  default     = null
+}
+
+variable "repository_password" {
+  description = "Password for HTTP basic authentication against the repository"
+  type        = string
+  default     = null
+}
+
+variable "repository_username" {
+  description = "Username for HTTP basic authentication against the repository"
+  type        = string
+  default     = null
+}
+
+variable "reset_values" {
+  description = "When upgrading, reset the values to the ones built into the chart. Defaults to `false`"
+  type        = bool
+  default     = null
+}
+
+variable "reuse_values" {
+  description = "When upgrading, reuse the last release's values and merge in any overrides. If `reset_values` is specified, this is ignored. Defaults to `false`"
+  type        = bool
+  default     = null
+}
+
+variable "set" {
+  description = "Value block with custom values to be merged with the values yaml"
+  type = list(object({
+    name                  = string
+    type                  = optional(string)
+    value_is_iam_role_arn = optional(bool, false)
+    value                 = optional(string) # optional for case where `value_is_iam_role_arn = true`
+  }))
+  default = null
+}
+
+variable "set_list" {
+  description = "Value block with custom list values to be merged with the values yaml"
+  type = list(object({
+    name  = string
+    value = list(string)
+  }))
+  default = null
+}
+
+variable "set_sensitive" {
+  description = "Value block with custom sensitive values to be merged with the values yaml that won't be exposed in the plan's diff"
+  type = list(object({
+    name  = string
+    type  = optional(string)
+    value = string
+  }))
+  default = null
+}
+
+variable "set_wo" {
+  description = "Custom values to be merged with the values. This is the same as `set` but write-only"
+  type = list(object({
+    name  = string
+    type  = optional(string)
+    value = string
+  }))
+  default = null
+}
+
+variable "set_wo_revision" {
+  description = "The current revision of the write-only `set_wo` attribute. Incrementing this integer value will cause Terraform to update the write-only value"
+  type        = number
+  default     = null
+}
+
+variable "skip_crds" {
+  description = "If set, no CRDs will be installed. By default, CRDs are installed if not already present. Defaults to `false`"
+  type        = bool
+  default     = null
+}
+
+variable "take_ownership" {
+  description = "If set, allows Helm to adopt existing resources not marked as managed by the release. Defaults to `false`"
+  type        = bool
+  default     = null
+}
+
+variable "timeout" {
+  description = "Time in seconds to wait for any individual kubernetes operation (like Jobs for hooks). Defaults to `300` seconds"
+  type        = number
+  default     = null
+}
+
+variable "upgrade_install" {
+  description = " If true, the provider will install the release at the specified version even if a release not controlled by the provider is present: this is equivalent to running 'helm upgrade --install' with the Helm CLI. Defaults to `true`"
+  type        = bool
+  default     = true
+}
+
+variable "values" {
+  description = "List of values in raw yaml to pass to helm. Values will be merged, in order, as Helm does with multiple `-f` options"
+  type        = list(string)
+  default     = null
+}
+
+variable "verify" {
+  description = "Verify the package before installing it. Helm uses a provenance file to verify the integrity of the chart; this must be hosted alongside the chart. For more information see the Helm Documentation. Defaults to `false`"
+  type        = bool
+  default     = null
+}
+
+variable "chart_version" {
+  description = "Specify the exact chart version to install. If this is not specified, the latest version is installed"
+  type        = string
   default     = null
 }
 
@@ -200,46 +297,15 @@ variable "wait_for_jobs" {
   default     = null
 }
 
-variable "dependency_update" {
-  description = "Runs helm dependency update before installing the chart. Defaults to `false`"
-  type        = bool
-  default     = null
-}
-
-variable "replace" {
-  description = "Re-use the given name, only if that name is a deleted release which remains in the history. This is unsafe in production. Defaults to `false`"
-  type        = bool
-  default     = null
-}
-
-variable "lint" {
-  description = "Run the helm chart linter during the plan. Defaults to `false`"
-  type        = bool
-  default     = null
-}
-
-variable "postrender" {
-  description = "Configure a command to run after helm renders the manifest which can alter the manifest contents"
-  type        = any
-  default     = {}
-}
-
-variable "set" {
-  description = "Value block with custom values to be merged with the values yaml"
-  type        = any
-  default     = []
-}
-
-variable "set_sensitive" {
-  description = "Value block with custom sensitive values to be merged with the values yaml that won't be exposed in the plan's diff"
-  type        = any
-  default     = []
-}
-
-variable "set_irsa_names" {
-  description = "Value annotations name where IRSA role ARN created by module will be assigned to the `value`"
-  type        = list(string)
-  default     = []
+variable "release_timeouts" {
+  description = "Customize the `helm_release` resource timeouts for create, read, update, and delete operations"
+  type = object({
+    create = optional(string)
+    read   = optional(string)
+    update = optional(string)
+    delete = optional(string)
+  })
+  default = null
 }
 
 ################################################################################

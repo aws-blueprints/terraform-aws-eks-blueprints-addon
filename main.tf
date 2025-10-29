@@ -1,5 +1,14 @@
 locals {
   namespace = try(coalesce(var.namespace, "default")) # Need to explicitly set default for use with IRSA
+
+  set = var.set != null ? [
+    for s in var.set : merge(
+      s,
+      {
+        value = s.value_is_iam_role_arn ? try(aws_iam_role.this[0].arn, "") : s.value
+      }
+    )
+  ] : null
 }
 
 ################################################################################
@@ -9,78 +18,50 @@ locals {
 resource "helm_release" "this" {
   count = var.create && var.create_release ? 1 : 0
 
-  name             = try(coalesce(var.name, var.chart), "")
-  description      = var.description
-  namespace        = local.namespace
-  create_namespace = var.create_namespace
-  chart            = var.chart
-  version          = var.chart_version # conflicts with reserved keyword
-  repository       = var.repository
-  values           = var.values
-
-  timeout                    = var.timeout
-  repository_key_file        = var.repository_key_file
-  repository_cert_file       = var.repository_cert_file
-  repository_ca_file         = var.repository_ca_file
-  repository_username        = var.repository_username
-  repository_password        = var.repository_password
-  devel                      = var.devel
-  verify                     = var.verify
-  keyring                    = var.keyring
-  disable_webhooks           = var.disable_webhooks
-  reuse_values               = var.reuse_values
-  reset_values               = var.reset_values
-  force_update               = var.force_update
-  recreate_pods              = var.recreate_pods
-  cleanup_on_fail            = var.cleanup_on_fail
-  max_history                = var.max_history
   atomic                     = var.atomic
-  skip_crds                  = var.skip_crds
-  render_subchart_notes      = var.render_subchart_notes
+  chart                      = var.chart
+  cleanup_on_fail            = var.cleanup_on_fail
+  create_namespace           = var.create_namespace
+  dependency_update          = var.dependency_update
+  description                = var.description
+  devel                      = var.devel
+  disable_crd_hooks          = var.disable_crd_hooks
   disable_openapi_validation = var.disable_openapi_validation
+  disable_webhooks           = var.disable_webhooks
+  force_update               = var.force_update
+  keyring                    = var.keyring
+  lint                       = var.lint
+  max_history                = var.max_history
+  name                       = try(coalesce(var.name, var.chart), "")
+  namespace                  = local.namespace
+  pass_credentials           = var.pass_credentials
+  postrender                 = var.postrender
+  recreate_pods              = var.recreate_pods
+  render_subchart_notes      = var.render_subchart_notes
+  replace                    = var.replace
+  repository                 = var.repository
+  repository_ca_file         = var.repository_ca_file
+  repository_cert_file       = var.repository_cert_file
+  repository_key_file        = var.repository_key_file
+  repository_password        = var.repository_password
+  repository_username        = var.repository_username
+  reset_values               = var.reset_values
+  reuse_values               = var.reuse_values
+  set                        = local.set
+  set_list                   = var.set_list
+  set_sensitive              = var.set_sensitive
+  set_wo                     = var.set_wo
+  set_wo_revision            = var.set_wo_revision
+  skip_crds                  = var.skip_crds
+  take_ownership             = var.take_ownership
+  timeout                    = var.timeout
+  timeouts                   = var.release_timeouts
+  upgrade_install            = var.upgrade_install
+  values                     = var.values
+  verify                     = var.verify
+  version                    = var.chart_version # conflicts with reserved keyword
   wait                       = var.wait
   wait_for_jobs              = var.wait_for_jobs
-  dependency_update          = var.dependency_update
-  replace                    = var.replace
-  lint                       = var.lint
-
-  dynamic "postrender" {
-    for_each = length(var.postrender) > 0 ? [var.postrender] : []
-
-    content {
-      binary_path = postrender.value.binary_path
-      args        = try(postrender.value.args, null)
-    }
-  }
-
-  dynamic "set" {
-    for_each = var.set
-
-    content {
-      name  = set.value.name
-      value = set.value.value
-      type  = try(set.value.type, null)
-    }
-  }
-
-  dynamic "set" {
-    for_each = { for k, v in toset(var.set_irsa_names) : k => v if var.create && var.create_role }
-    iterator = each
-    content {
-      name  = each.value
-      value = aws_iam_role.this[0].arn
-    }
-  }
-
-  dynamic "set_sensitive" {
-    for_each = var.set_sensitive
-
-    content {
-      name  = set_sensitive.value.name
-      value = set_sensitive.value.value
-      type  = try(set_sensitive.value.type, null)
-    }
-  }
 }
 
 ################################################################################
@@ -90,6 +71,7 @@ resource "helm_release" "this" {
 data "aws_partition" "current" {
   count = local.create_role ? 1 : 0
 }
+
 data "aws_caller_identity" "current" {
   count = local.create_role ? 1 : 0
 }

@@ -8,8 +8,8 @@ Terraform module which provisions an addon ([Helm release](https://registry.terr
 
 ```hcl
 module "eks_blueprints_addon" {
-  source = "aws-blueprints/eks-blueprints-addon/aws"
-  version = "~> 1.0" #ensure to update this to the latest/desired version
+  source  = "aws-blueprints/eks-blueprints-addon/aws"
+  version = "~> 1.2"
 
   chart            = "karpenter"
   chart_version    = "0.16.2"
@@ -30,15 +30,13 @@ module "eks_blueprints_addon" {
     {
       name  = "aws.defaultInstanceProfile"
       value = "arn:aws:iam::111111111111:instance-profile/KarpenterNodeInstanceProfile-complete"
+    },
+    {
+      # Set the annotation for IRSA using the role created in this module
+      name             = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+      use_iam_role_arn = true
     }
   ]
-
-  set_irsa_names = ["serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"]
-  # # Equivalent to the following but the ARN is only known internally to the module
-  # set = [{
-  #   name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-  #   value = iam_role_arn.this[0].arn
-  # }]
 
   # IAM role for service account (IRSA)
   create_role = true
@@ -65,8 +63,8 @@ module "eks_blueprints_addon" {
 
 ```hcl
 module "eks_blueprints_addon" {
-  source = "aws-blueprints/eks-blueprints-addon/aws"
-  version = "~> 1.0" #ensure to update this to the latest/desired version
+  source  = "aws-blueprints/eks-blueprints-addon/aws"
+  version = "~> 1.2"
 
   chart         = "metrics-server"
   chart_version = "3.8.2"
@@ -96,8 +94,8 @@ module "eks_blueprints_addon" {
 
 ```hcl
 module "eks_blueprints_addon" {
-  source = "aws-blueprints/eks-blueprints-addon/aws"
-  version = "~> 1.0" #ensure to update this to the latest/desired version
+  source  = "aws-blueprints/eks-blueprints-addon/aws"
+  version = "~> 1.2"
 
   # Disable helm release
   create_release = false
@@ -124,30 +122,21 @@ module "eks_blueprints_addon" {
 }
 ```
 
-## Support & Feedback
-
-> [!IMPORTANT]
-> EKS Blueprints for Terraform is maintained by AWS Solution Architects. It is not part of an AWS
-> service and support is provided as a best-effort by the EKS Blueprints community. To provide feedback,
-> please use the [issues templates](https://github.com/aws-blueprints/terraform-aws-eks-blueprints-addon/issues)
-> provided. If you are interested in contributing to EKS Blueprints, see the
-> [Contribution guide](https://github.com/aws-blueprints/terraform-aws-eks-blueprints-addon/blob/main/.github/CONTRIBUTING.md).
-
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 4.47, < 6.0 |
-| <a name="requirement_helm"></a> [helm](#requirement\_helm) | >= 2.9, < 3.0 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.11 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.0 |
+| <a name="requirement_helm"></a> [helm](#requirement\_helm) | >= 3.1 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 4.47, < 6.0 |
-| <a name="provider_helm"></a> [helm](#provider\_helm) | >= 2.9, < 3.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 6.0 |
+| <a name="provider_helm"></a> [helm](#provider\_helm) | >= 3.1 |
 
 ## Modules
 
@@ -185,6 +174,7 @@ No modules.
 | <a name="input_dependency_update"></a> [dependency\_update](#input\_dependency\_update) | Runs helm dependency update before installing the chart. Defaults to `false` | `bool` | `null` | no |
 | <a name="input_description"></a> [description](#input\_description) | Set release description attribute (visible in the history) | `string` | `null` | no |
 | <a name="input_devel"></a> [devel](#input\_devel) | Use chart development versions, too. Equivalent to version '>0.0.0-0'. If version is set, this is ignored | `bool` | `null` | no |
+| <a name="input_disable_crd_hooks"></a> [disable\_crd\_hooks](#input\_disable\_crd\_hooks) | Prevent CRD hooks from, running, but run other hooks. See `helm install --no-crd-hook` | `bool` | `null` | no |
 | <a name="input_disable_openapi_validation"></a> [disable\_openapi\_validation](#input\_disable\_openapi\_validation) | If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema. Defaults to `false` | `bool` | `null` | no |
 | <a name="input_disable_webhooks"></a> [disable\_webhooks](#input\_disable\_webhooks) | Prevent hooks from running. Defaults to `false` | `bool` | `null` | no |
 | <a name="input_force_update"></a> [force\_update](#input\_force\_update) | Force resource update through delete/recreate if needed. Defaults to `false` | `bool` | `null` | no |
@@ -196,13 +186,15 @@ No modules.
 | <a name="input_namespace"></a> [namespace](#input\_namespace) | The namespace to install the release into. Defaults to `default` | `string` | `null` | no |
 | <a name="input_oidc_providers"></a> [oidc\_providers](#input\_oidc\_providers) | Map of OIDC providers where each provider map should contain the `provider_arn`, and `service_accounts` | `any` | `{}` | no |
 | <a name="input_override_policy_documents"></a> [override\_policy\_documents](#input\_override\_policy\_documents) | List of IAM policy documents that are merged together into the exported document. In merging, statements with non-blank `sid`s will override statements with the same `sid` | `list(string)` | `[]` | no |
+| <a name="input_pass_credentials"></a> [pass\_credentials](#input\_pass\_credentials) | Pass credentials to all domains. Defaults to `false` | `bool` | `null` | no |
 | <a name="input_policy_description"></a> [policy\_description](#input\_policy\_description) | IAM policy description | `string` | `null` | no |
 | <a name="input_policy_name"></a> [policy\_name](#input\_policy\_name) | Name of IAM policy | `string` | `null` | no |
 | <a name="input_policy_name_use_prefix"></a> [policy\_name\_use\_prefix](#input\_policy\_name\_use\_prefix) | Determines whether the IAM policy name (`policy_name`) is used as a prefix | `bool` | `true` | no |
 | <a name="input_policy_path"></a> [policy\_path](#input\_policy\_path) | Path of IAM policy | `string` | `null` | no |
 | <a name="input_policy_statements"></a> [policy\_statements](#input\_policy\_statements) | List of IAM policy [statements](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document#statement) | `any` | `[]` | no |
-| <a name="input_postrender"></a> [postrender](#input\_postrender) | Configure a command to run after helm renders the manifest which can alter the manifest contents | `any` | `{}` | no |
+| <a name="input_postrender"></a> [postrender](#input\_postrender) | Configure a command to run after helm renders the manifest which can alter the manifest contents | <pre>object({<br/>    args        = optional(list(string))<br/>    binary_path = string<br/>  })</pre> | `null` | no |
 | <a name="input_recreate_pods"></a> [recreate\_pods](#input\_recreate\_pods) | Perform pods restart during upgrade/rollback. Defaults to `false` | `bool` | `null` | no |
+| <a name="input_release_timeouts"></a> [release\_timeouts](#input\_release\_timeouts) | Customize the `helm_release` resource timeouts for create, read, update, and delete operations | <pre>object({<br/>    create = optional(string)<br/>    read   = optional(string)<br/>    update = optional(string)<br/>    delete = optional(string)<br/>  })</pre> | `null` | no |
 | <a name="input_render_subchart_notes"></a> [render\_subchart\_notes](#input\_render\_subchart\_notes) | If set, render subchart notes along with the parent. Defaults to `true` | `bool` | `null` | no |
 | <a name="input_replace"></a> [replace](#input\_replace) | Re-use the given name, only if that name is a deleted release which remains in the history. This is unsafe in production. Defaults to `false` | `bool` | `null` | no |
 | <a name="input_repository"></a> [repository](#input\_repository) | Repository URL where to locate the requested chart | `string` | `null` | no |
@@ -219,13 +211,17 @@ No modules.
 | <a name="input_role_path"></a> [role\_path](#input\_role\_path) | Path of IAM role | `string` | `"/"` | no |
 | <a name="input_role_permissions_boundary_arn"></a> [role\_permissions\_boundary\_arn](#input\_role\_permissions\_boundary\_arn) | Permissions boundary ARN to use for IAM role | `string` | `null` | no |
 | <a name="input_role_policies"></a> [role\_policies](#input\_role\_policies) | Policies to attach to the IAM role in `{'static_name' = 'policy_arn'}` format | `map(string)` | `{}` | no |
-| <a name="input_set"></a> [set](#input\_set) | Value block with custom values to be merged with the values yaml | `any` | `[]` | no |
-| <a name="input_set_irsa_names"></a> [set\_irsa\_names](#input\_set\_irsa\_names) | Value annotations name where IRSA role ARN created by module will be assigned to the `value` | `list(string)` | `[]` | no |
-| <a name="input_set_sensitive"></a> [set\_sensitive](#input\_set\_sensitive) | Value block with custom sensitive values to be merged with the values yaml that won't be exposed in the plan's diff | `any` | `[]` | no |
+| <a name="input_set"></a> [set](#input\_set) | Value block with custom values to be merged with the values yaml | <pre>list(object({<br/>    name                  = string<br/>    type                  = optional(string)<br/>    value_is_iam_role_arn = optional(bool, false)<br/>    value                 = optional(string) # optional for case where `value_is_iam_role_arn = true`<br/>  }))</pre> | `null` | no |
+| <a name="input_set_list"></a> [set\_list](#input\_set\_list) | Value block with custom list values to be merged with the values yaml | <pre>list(object({<br/>    name  = string<br/>    value = list(string)<br/>  }))</pre> | `null` | no |
+| <a name="input_set_sensitive"></a> [set\_sensitive](#input\_set\_sensitive) | Value block with custom sensitive values to be merged with the values yaml that won't be exposed in the plan's diff | <pre>list(object({<br/>    name  = string<br/>    type  = optional(string)<br/>    value = string<br/>  }))</pre> | `null` | no |
+| <a name="input_set_wo"></a> [set\_wo](#input\_set\_wo) | Custom values to be merged with the values. This is the same as `set` but write-only | <pre>list(object({<br/>    name  = string<br/>    type  = optional(string)<br/>    value = string<br/>  }))</pre> | `null` | no |
+| <a name="input_set_wo_revision"></a> [set\_wo\_revision](#input\_set\_wo\_revision) | The current revision of the write-only `set_wo` attribute. Incrementing this integer value will cause Terraform to update the write-only value | `number` | `null` | no |
 | <a name="input_skip_crds"></a> [skip\_crds](#input\_skip\_crds) | If set, no CRDs will be installed. By default, CRDs are installed if not already present. Defaults to `false` | `bool` | `null` | no |
 | <a name="input_source_policy_documents"></a> [source\_policy\_documents](#input\_source\_policy\_documents) | List of IAM policy documents that are merged together into the exported document. Statements must have unique `sid`s | `list(string)` | `[]` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | A map of tags to add to all resources | `map(string)` | `{}` | no |
+| <a name="input_take_ownership"></a> [take\_ownership](#input\_take\_ownership) | If set, allows Helm to adopt existing resources not marked as managed by the release. Defaults to `false` | `bool` | `null` | no |
 | <a name="input_timeout"></a> [timeout](#input\_timeout) | Time in seconds to wait for any individual kubernetes operation (like Jobs for hooks). Defaults to `300` seconds | `number` | `null` | no |
+| <a name="input_upgrade_install"></a> [upgrade\_install](#input\_upgrade\_install) | If true, the provider will install the release at the specified version even if a release not controlled by the provider is present: this is equivalent to running 'helm upgrade --install' with the Helm CLI. Defaults to `true` | `bool` | `true` | no |
 | <a name="input_values"></a> [values](#input\_values) | List of values in raw yaml to pass to helm. Values will be merged, in order, as Helm does with multiple `-f` options | `list(string)` | `null` | no |
 | <a name="input_verify"></a> [verify](#input\_verify) | Verify the package before installing it. Helm uses a provenance file to verify the integrity of the chart; this must be hosted alongside the chart. For more information see the Helm Documentation. Defaults to `false` | `bool` | `null` | no |
 | <a name="input_wait"></a> [wait](#input\_wait) | Will wait until all resources are in a ready state before marking the release as successful. If set to `true`, it will wait for as long as `timeout`. If set to `null` fallback on `300s` timeout.  Defaults to `false` | `bool` | `false` | no |
