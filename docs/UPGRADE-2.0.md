@@ -7,6 +7,7 @@ Please consult the `tests` directory for reference configurations. If you find a
 - Minimum supported version of Terraform AWS provider updated to `v6.0` to support the latest resources and configurations
 - Minimum supported version of Terraform Helm provider updated to `v3.1` to support the latest resources and configurations
 - Minimum supported version of Terraform updated to `v1.11` due to new write only (`*_wo`) attributes used in the module (via `helm_release` resource)
+- The `allow_self_assume_role` variable and associated trust policy statement has been removed; the addon should not need to assume its own role.
 - The `set_irsa_names` variable has been removed. To set the IRSA annotation for the service account, use the `set` variable to provide the annotation `name` and then set `value_is_iam_role_arn = true` to refer to the IAM role created by the module. For example:
 
   ```hcl
@@ -18,9 +19,6 @@ Please consult the `tests` directory for reference configurations. If you find a
   ]
   ```
 
-- The `allow_self_assume_role` variable and associated trust policy statement has been removed; the addon should not need to assume its own role.
-- Variable definitions now contain detailed object types in place of the previously used `any` type.
-
 ## Additional changes
 
 ### Added
@@ -29,7 +27,7 @@ Please consult the `tests` directory for reference configurations. If you find a
 
 ### Modified
 
--
+- Variable definitions now contain detailed object types in place of the previously used `any` type.
 
 ### Removed
 
@@ -56,6 +54,7 @@ Please consult the `tests` directory for reference configurations. If you find a
     - `release_timeouts`
     - `upgrade_install`
     - `set_list`
+    - `pass_credentials`
 
 4. Removed outputs:
 
