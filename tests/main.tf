@@ -16,13 +16,11 @@ provider "helm" {
   }
 }
 
-data "aws_caller_identity" "current" {}
 data "aws_availability_zones" "available" {}
 
 locals {
-  name       = basename(path.cwd)
-  region     = "us-west-2"
-  account_id = data.aws_caller_identity.current.account_id
+  name   = basename(path.cwd)
+  region = "us-west-2"
 
   vpc_cidr = "10.0.0.0/16"
   azs      = slice(data.aws_availability_zones.available.names, 0, 3)
@@ -43,7 +41,7 @@ module "helm_release_only" {
   source = "../"
 
   chart         = "metrics-server"
-  chart_version = "3.8.2"
+  chart_version = "3.13.0"
   repository    = "https://kubernetes-sigs.github.io/metrics-server/"
   description   = "Metric server helm Chart deployment configuration"
   namespace     = "kube-system"
@@ -60,7 +58,7 @@ module "helm_release_only" {
   set = [
     {
       name  = "replicas"
-      value = 3
+      value = 2
     }
   ]
 }
@@ -68,26 +66,24 @@ module "helm_release_only" {
 module "helm_release_irsa" {
   source = "../"
 
-  chart            = "karpenter"
-  chart_version    = "0.16.2"
-  repository       = "https://charts.karpenter.sh/"
-  description      = "Kubernetes Node Autoscaling: built for flexibility, performance, and simplicity"
-  namespace        = "karpenter"
-  create_namespace = true
+  chart         = "cni-metrics-helper"
+  chart_version = "1.20.4"
+  repository    = "https://aws.github.io/eks-charts"
+  description   = "A Helm chart for CNI metrics helper"
+  namespace     = "kube-system"
+
+  values = [
+    <<-EOT
+      image:
+        region: ${local.region}
+      env:
+        AWS_CLUSTER_ID: ${module.eks.cluster_name}
+      serviceAccount:
+        name: cni-metrics-helper
+    EOT
+  ]
 
   set = [
-    {
-      name  = "clusterName"
-      value = module.eks.cluster_name
-    },
-    {
-      name  = "clusterEndpoint"
-      value = module.eks.cluster_endpoint
-    },
-    {
-      name  = "aws.defaultInstanceProfile"
-      value = aws_iam_instance_profile.karpenter.name
-    },
     {
       # Set the annotation for IRSA using the role created in this module
       name                  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
@@ -97,16 +93,21 @@ module "helm_release_irsa" {
 
   # IAM role for service account (IRSA)
   create_role = true
-  role_name   = "karpenter-controller"
-  role_policies = {
-    karpenter = aws_iam_policy.karpenter_controller.arn
+  role_name   = "cni-metrics-helper"
+  policy_statements = {
+    CloudWatchWrite = {
+      actions = [
+        "cloudwatch:PutMetricData"
+      ]
+      resources = ["*"]
+    }
   }
 
   oidc_providers = {
     this = {
-      provider_arn = module.eks.oidc_provider_arn
-      # namespace is inherited from chart
-      service_account = "karpenter"
+      provider_arn    = module.eks.oidc_provider_arn
+      namespace       = "kube-system"
+      service_account = "cni-metrics-helpere"
     }
   }
 
@@ -151,9 +152,21 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 21.0"
 
-  name                   = local.name
-  kubernetes_version     = "1.34"
-  endpoint_public_access = true
+  name               = local.name
+  kubernetes_version = "1.34"
+
+  # Access for Helm to deploy via Terraform
+  endpoint_public_access                   = true
+  enable_cluster_creator_admin_permissions = true
+
+  # EKS Addons
+  addons = {
+    coredns    = {}
+    kube-proxy = {}
+    vpc-cni = {
+      before_compute = true
+    }
+  }
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
@@ -199,94 +212,6 @@ module "vpc" {
     # Tags subnets for Karpenter auto-discovery
     (local.karpenter_tag_key) = local.name
   }
-
-  tags = local.tags
-}
-
-resource "aws_iam_instance_profile" "karpenter" {
-  name = "KarpenterNodeInstanceProfile-${local.name}"
-  role = module.eks.eks_managed_node_groups["initial"].iam_role_name
-
-  tags = local.tags
-}
-
-data "aws_iam_policy_document" "karpenter_controller" {
-  statement {
-    actions = [
-      "ec2:CreateLaunchTemplate",
-      "ec2:CreateFleet",
-      "ec2:CreateTags",
-      "ec2:DescribeLaunchTemplates",
-      "ec2:DescribeImages",
-      "ec2:DescribeInstances",
-      "ec2:DescribeSecurityGroups",
-      "ec2:DescribeSubnets",
-      "ec2:DescribeInstanceTypes",
-      "ec2:DescribeInstanceTypeOfferings",
-      "ec2:DescribeAvailabilityZones",
-      "ec2:DescribeSpotPriceHistory",
-      "pricing:GetProducts",
-    ]
-
-    resources = ["*"]
-  }
-
-  statement {
-    actions = [
-      "ec2:TerminateInstances",
-      "ec2:DeleteLaunchTemplate",
-    ]
-
-    resources = ["*"]
-
-    condition {
-      test     = "StringEquals"
-      variable = "ec2:ResourceTag/${local.karpenter_tag_key}"
-      values   = [module.eks.cluster_name]
-    }
-  }
-
-  statement {
-    actions = ["ec2:RunInstances"]
-    resources = [
-      "arn:aws:ec2:*:${local.account_id}:launch-template/*",
-      "arn:aws:ec2:*:${local.account_id}:security-group/*",
-    ]
-
-    condition {
-      test     = "StringEquals"
-      variable = "ec2:ResourceTag/${local.karpenter_tag_key}"
-      values   = [module.eks.cluster_name]
-    }
-  }
-
-  statement {
-    actions = ["ec2:RunInstances"]
-    resources = [
-      "arn:aws:ec2:*::image/*",
-      "arn:aws:ec2:*:${local.account_id}:instance/*",
-      "arn:aws:ec2:*:${local.account_id}:spot-instances-request/*",
-      "arn:aws:ec2:*:${local.account_id}:volume/*",
-      "arn:aws:ec2:*:${local.account_id}:network-interface/*",
-      "arn:aws:ec2:*:${local.account_id}:subnet/*",
-    ]
-  }
-
-  statement {
-    actions   = ["ssm:GetParameter"]
-    resources = ["arn:aws:ssm:*:*:parameter/aws/service/*"]
-  }
-
-  statement {
-    actions   = ["iam:PassRole"]
-    resources = [module.eks.eks_managed_node_groups["initial"].iam_role_arn]
-  }
-}
-
-resource "aws_iam_policy" "karpenter_controller" {
-  name_prefix = "Karpenter_Controller_Policy-"
-  description = "Provides permissions to handle node termination events via the Node Termination Handler"
-  policy      = data.aws_iam_policy_document.karpenter_controller.json
 
   tags = local.tags
 }
