@@ -23,11 +23,12 @@ Please consult the `tests` directory for reference configurations. If you find a
 
 ### Added
 
--
+- Added support for utilizing EKS Pod Identity with or without IRSA
 
 ### Modified
 
 - Variable definitions now contain detailed object types in place of the previously used `any` type.
+- `create_role` now defaults to `true` since this is what most commonly set
 
 ### Removed
 
@@ -42,19 +43,23 @@ Please consult the `tests` directory for reference configurations. If you find a
 
 2. Renamed variables:
 
-    -
+    - `oidc_providers` -> `irsa_oidc_providers` to be more explicit about its purpose
 
 3. Added variables:
 
-    - `value_is_iam_role_arn`
-    - `disable_crd_hooks`
-    - `set_wo`
-    - `set_wo_revision`
-    - `take_ownership`
-    - `release_timeouts`
-    - `upgrade_install`
-    - `set_list`
-    - `pass_credentials`
+    - `value_is_iam_role_arn` - for referencing the module created IAM role for IRSA annotation
+    - `disable_crd_hooks` - new Helm release argument
+    - `set_wo` - new Helm release argument
+    - `set_wo_revision` - new Helm release argument
+    - `take_ownership` - new Helm release argument
+    - `release_timeouts` - new Helm release argument
+    - `upgrade_install` - new Helm release argument
+    - `set_list` - new Helm release argument
+    - `pass_credentials` - new Helm release argument
+    - `trust_policy_conditions` - allow for additional conditions in the IAM role trust policy
+    - `enable_pod_identity` - to enable or disable the  use of EKS Pod Identity
+    - `pod_identity_associations` - map of EKS Pod Identity association configurations
+    - `pod_identity_association_defaults` - default values for EKS Pod Identity associations
 
 4. Removed outputs:
 

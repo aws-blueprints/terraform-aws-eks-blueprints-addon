@@ -1,55 +1,103 @@
 # Amazon EKS Blueprints Addon Terraform module
 
-Terraform module which provisions an addon ([Helm release](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release)) and an [IAM role for service accounts (IRSA)](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html).
+Terraform module which provisions an addon ([Helm release](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release)), [IAM role for service accounts (IRSA)](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html), and [EKS Pod Identity](https://docs.aws.amazon.com/eks/latest/userguide/pod-identities.html).
 
 ## Usage
+
+### Create Addon (Helm Release) w/ EKS Pod Identity
+
+```hcl
+module "eks_blueprints_addon" {
+  source = "aws-blueprints/eks-blueprints-addon/aws"
+
+  chart         = "cni-metrics-helper"
+  chart_version = "1.20.4"
+  repository    = "https://aws.github.io/eks-charts"
+  description   = "A Helm chart for CNI metrics helper"
+  namespace     = "kube-system"
+
+  values = [
+    <<-EOT
+      env:
+        AWS_CLUSTER_ID: example
+      serviceAccount:
+        name: cni-metrics-helper
+    EOT
+  ]
+
+  # IAM role
+  role_name   = "cni-metrics-helper"
+  policy_statements = {
+    CloudWatchWrite = {
+      actions = [
+        "cloudwatch:PutMetricData"
+      ]
+      resources = ["*"]
+    }
+  }
+
+  # EKS Pod Identity
+  enable_pod_identity = true
+  pod_identity_associations = {
+    this = {
+      cluster_name = "example"
+      # namespace is inherited from chart
+      service_account = "cni-metrics-helper"
+    }
+  }
+
+  tags = {
+    Environment = "dev"
+  }
+}
+```
 
 ### Create Addon (Helm Release) w/ IAM Role for Service Account (IRSA)
 
 ```hcl
 module "eks_blueprints_addon" {
-  source  = "aws-blueprints/eks-blueprints-addon/aws"
-  version = "~> 1.2"
+  source = "aws-blueprints/eks-blueprints-addon/aws"
 
-  chart            = "karpenter"
-  chart_version    = "0.16.2"
-  repository       = "https://charts.karpenter.sh/"
-  description      = "Kubernetes Node Autoscaling: built for flexibility, performance, and simplicity"
-  namespace        = "karpenter"
-  create_namespace = true
+  chart         = "cni-metrics-helper"
+  chart_version = "1.20.4"
+  repository    = "https://aws.github.io/eks-charts"
+  description   = "A Helm chart for CNI metrics helper"
+  namespace     = "kube-system"
+
+  values = [
+    <<-EOT
+      env:
+        AWS_CLUSTER_ID: ${module.eks.cluster_name}
+      serviceAccount:
+        name: cni-metrics-helper
+    EOT
+  ]
 
   set = [
     {
-      name  = "clusterName"
-      value = "eks-blueprints-addon-example"
-    },
-    {
-      name  = "clusterEndpoint"
-      value = "https://EXAMPLED539D4633E53DE1B71EXAMPLE.gr7.us-west-2.eks.amazonaws.com"
-    },
-    {
-      name  = "aws.defaultInstanceProfile"
-      value = "arn:aws:iam::111111111111:instance-profile/KarpenterNodeInstanceProfile-complete"
-    },
-    {
       # Set the annotation for IRSA using the role created in this module
-      name             = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-      use_iam_role_arn = true
+      name                  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+      value_is_iam_role_arn = true
     }
   ]
 
-  # IAM role for service account (IRSA)
-  create_role = true
-  role_name   = "karpenter-controller"
-  role_policies = {
-    karpenter = "arn:aws:iam::111111111111:policy/Karpenter_Controller_Policy-20221008165117447500000007"
+  # IAM role
+  role_name   = "cni-metrics-helper"
+  policy_statements = {
+    CloudWatchWrite = {
+      actions = [
+        "cloudwatch:PutMetricData"
+      ]
+      resources = ["*"]
+    }
   }
 
-  oidc_providers = {
+  # Trust policy for IRSA
+  irsa_oidc_providers = {
     this = {
-      provider_arn = "oidc.eks.us-west-2.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE"
+      provider_arn    = "oidc.eks.us-west-2.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE"
       # namespace is inherited from chart
-      service_account = "karpenter"
+      service_account = "cni-metrics-helpere"
     }
   }
 
@@ -63,11 +111,10 @@ module "eks_blueprints_addon" {
 
 ```hcl
 module "eks_blueprints_addon" {
-  source  = "aws-blueprints/eks-blueprints-addon/aws"
-  version = "~> 1.2"
+  source = "aws-blueprints/eks-blueprints-addon/aws"
 
   chart         = "metrics-server"
-  chart_version = "3.8.2"
+  chart_version = "3.13.0"
   repository    = "https://kubernetes-sigs.github.io/metrics-server/"
   description   = "Metric server helm Chart deployment configuration"
   namespace     = "kube-system"
@@ -84,9 +131,11 @@ module "eks_blueprints_addon" {
   set = [
     {
       name  = "replicas"
-      value = 3
+      value = 2
     }
   ]
+
+  create_role = false
 }
 ```
 
@@ -94,21 +143,18 @@ module "eks_blueprints_addon" {
 
 ```hcl
 module "eks_blueprints_addon" {
-  source  = "aws-blueprints/eks-blueprints-addon/aws"
-  version = "~> 1.2"
+  source = "aws-blueprints/eks-blueprints-addon/aws"
 
   # Disable helm release
   create_release = false
 
   # IAM role for service account (IRSA)
-  create_role = true
-  create_policy = false
-  role_name   = "aws-vpc-cni-ipv4"
+  role_name     = "aws-vpc-cni-ipv4"
   role_policies = {
     AmazonEKS_CNI_Policy = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
   }
 
-  oidc_providers = {
+  irsa_oidc_providers = {
     this = {
       provider_arn    = "oidc.eks.us-west-2.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE"
       namespace       = "kube-system"
@@ -146,6 +192,7 @@ No modules.
 
 | Name | Type |
 |------|------|
+| [aws_eks_pod_identity_association.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_pod_identity_association) | resource |
 | [aws_iam_policy.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_role.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role_policy_attachment.additional](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
@@ -167,23 +214,26 @@ No modules.
 | <a name="input_create_namespace"></a> [create\_namespace](#input\_create\_namespace) | Create the namespace if it does not yet exist. Defaults to `false` | `bool` | `null` | no |
 | <a name="input_create_policy"></a> [create\_policy](#input\_create\_policy) | Whether to create an IAM policy that is attached to the IAM role created | `bool` | `true` | no |
 | <a name="input_create_release"></a> [create\_release](#input\_create\_release) | Determines whether the Helm release is created | `bool` | `true` | no |
-| <a name="input_create_role"></a> [create\_role](#input\_create\_role) | Determines whether to create an IAM role | `bool` | `false` | no |
+| <a name="input_create_role"></a> [create\_role](#input\_create\_role) | Determines whether to create an IAM role | `bool` | `true` | no |
 | <a name="input_dependency_update"></a> [dependency\_update](#input\_dependency\_update) | Runs helm dependency update before installing the chart. Defaults to `false` | `bool` | `null` | no |
 | <a name="input_description"></a> [description](#input\_description) | Set release description attribute (visible in the history) | `string` | `null` | no |
 | <a name="input_devel"></a> [devel](#input\_devel) | Use chart development versions, too. Equivalent to version '>0.0.0-0'. If version is set, this is ignored | `bool` | `null` | no |
 | <a name="input_disable_crd_hooks"></a> [disable\_crd\_hooks](#input\_disable\_crd\_hooks) | Prevent CRD hooks from, running, but run other hooks. See `helm install --no-crd-hook` | `bool` | `null` | no |
 | <a name="input_disable_openapi_validation"></a> [disable\_openapi\_validation](#input\_disable\_openapi\_validation) | If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema. Defaults to `false` | `bool` | `null` | no |
 | <a name="input_disable_webhooks"></a> [disable\_webhooks](#input\_disable\_webhooks) | Prevent hooks from running. Defaults to `false` | `bool` | `null` | no |
+| <a name="input_enable_pod_identity"></a> [enable\_pod\_identity](#input\_enable\_pod\_identity) | Whether to add a trust relationship for EKS Pod Identity (pods.eks.amazonaws.com) | `bool` | `false` | no |
 | <a name="input_force_update"></a> [force\_update](#input\_force\_update) | Force resource update through delete/recreate if needed. Defaults to `false` | `bool` | `null` | no |
+| <a name="input_irsa_oidc_providers"></a> [irsa\_oidc\_providers](#input\_irsa\_oidc\_providers) | Map of OIDC providers used to create the appropriate trust policy for IAM role for service account (IRSA). If not using IRSA, leave this as `null` | <pre>map(object({<br/>    provider_arn    = string<br/>    service_account = string<br/>    namespace       = optional(string)<br/>  }))</pre> | `null` | no |
 | <a name="input_keyring"></a> [keyring](#input\_keyring) | Location of public keys used for verification. Used only if verify is true. Defaults to `/.gnupg/pubring.gpg` in the location set by `home` | `string` | `null` | no |
 | <a name="input_lint"></a> [lint](#input\_lint) | Run the helm chart linter during the plan. Defaults to `false` | `bool` | `null` | no |
 | <a name="input_max_history"></a> [max\_history](#input\_max\_history) | Maximum number of release versions stored per release. Defaults to `0` (no limit) | `number` | `null` | no |
 | <a name="input_max_session_duration"></a> [max\_session\_duration](#input\_max\_session\_duration) | Maximum CLI/API session duration in seconds between 3600 and 43200 | `number` | `null` | no |
 | <a name="input_name"></a> [name](#input\_name) | Name of the Helm release | `string` | `""` | no |
 | <a name="input_namespace"></a> [namespace](#input\_namespace) | The namespace to install the release into. Defaults to `default` | `string` | `null` | no |
-| <a name="input_oidc_providers"></a> [oidc\_providers](#input\_oidc\_providers) | Map of OIDC providers where each provider map should contain the `provider_arn`, and `service_accounts` | <pre>map(object({<br/>    provider_arn    = string<br/>    service_account = string<br/>    namespace       = optional(string)<br/>  }))</pre> | `null` | no |
 | <a name="input_override_policy_documents"></a> [override\_policy\_documents](#input\_override\_policy\_documents) | List of IAM policy documents that are merged together into the exported document. In merging, statements with non-blank `sid`s will override statements with the same `sid` | `list(string)` | `[]` | no |
 | <a name="input_pass_credentials"></a> [pass\_credentials](#input\_pass\_credentials) | Pass credentials to all domains. Defaults to `true` | `bool` | `true` | no |
+| <a name="input_pod_identity_association_defaults"></a> [pod\_identity\_association\_defaults](#input\_pod\_identity\_association\_defaults) | Default values used across all EKS Pod Identity associations created unless a more specific value is provided | <pre>object({<br/>    cluster_name         = optional(string)<br/>    disable_session_tags = optional(bool)<br/>    namespace            = optional(string)<br/>    service_account      = optional(string)<br/>    role_arn             = optional(string)<br/>    target_role_arn      = optional(string)<br/>    tags                 = optional(map(string), {})<br/>  })</pre> | `{}` | no |
+| <a name="input_pod_identity_associations"></a> [pod\_identity\_associations](#input\_pod\_identity\_associations) | Map of EKS Pod Identity associations to be created (map of maps) | <pre>map(object({<br/>    cluster_name         = optional(string)<br/>    disable_session_tags = optional(bool)<br/>    namespace            = optional(string)<br/>    service_account      = optional(string)<br/>    role_arn             = optional(string)<br/>    target_role_arn      = optional(string)<br/>    tags                 = optional(map(string), {})<br/>  }))</pre> | `{}` | no |
 | <a name="input_policy_description"></a> [policy\_description](#input\_policy\_description) | IAM policy description | `string` | `null` | no |
 | <a name="input_policy_name"></a> [policy\_name](#input\_policy\_name) | Name of IAM policy | `string` | `null` | no |
 | <a name="input_policy_name_use_prefix"></a> [policy\_name\_use\_prefix](#input\_policy\_name\_use\_prefix) | Determines whether the IAM policy name (`policy_name`) is used as a prefix | `bool` | `true` | no |
@@ -191,6 +241,7 @@ No modules.
 | <a name="input_policy_statements"></a> [policy\_statements](#input\_policy\_statements) | A map of IAM policy [statements](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document#statement) for custom permission usage | <pre>map(object({<br/>    sid           = optional(string)<br/>    actions       = optional(list(string))<br/>    not_actions   = optional(list(string))<br/>    effect        = optional(string, "Allow")<br/>    resources     = optional(list(string))<br/>    not_resources = optional(list(string))<br/>    principals = optional(list(object({<br/>      type        = string<br/>      identifiers = list(string)<br/>    })))<br/>    not_principals = optional(list(object({<br/>      type        = string<br/>      identifiers = list(string)<br/>    })))<br/>    condition = optional(list(object({<br/>      test     = string<br/>      variable = string<br/>      values   = list(string)<br/>    })))<br/>  }))</pre> | `null` | no |
 | <a name="input_postrender"></a> [postrender](#input\_postrender) | Configure a command to run after helm renders the manifest which can alter the manifest contents | <pre>object({<br/>    args        = optional(list(string))<br/>    binary_path = string<br/>  })</pre> | `null` | no |
 | <a name="input_recreate_pods"></a> [recreate\_pods](#input\_recreate\_pods) | Perform pods restart during upgrade/rollback. Defaults to `false` | `bool` | `null` | no |
+| <a name="input_region"></a> [region](#input\_region) | Region where the *regional resource(s) will be managed. Defaults to the Region set in the provider configuration. Currently only applies to the EKS Pod Identity association(s) | `string` | `null` | no |
 | <a name="input_release_timeouts"></a> [release\_timeouts](#input\_release\_timeouts) | Customize the `helm_release` resource timeouts for create, read, update, and delete operations | <pre>object({<br/>    create = optional(string)<br/>    read   = optional(string)<br/>    update = optional(string)<br/>    delete = optional(string)<br/>  })</pre> | `null` | no |
 | <a name="input_render_subchart_notes"></a> [render\_subchart\_notes](#input\_render\_subchart\_notes) | If set, render subchart notes along with the parent. Defaults to `true` | `bool` | `null` | no |
 | <a name="input_replace"></a> [replace](#input\_replace) | Re-use the given name, only if that name is a deleted release which remains in the history. This is unsafe in production. Defaults to `false` | `bool` | `null` | no |
@@ -218,6 +269,7 @@ No modules.
 | <a name="input_tags"></a> [tags](#input\_tags) | A map of tags to add to all resources | `map(string)` | `{}` | no |
 | <a name="input_take_ownership"></a> [take\_ownership](#input\_take\_ownership) | If set, allows Helm to adopt existing resources not marked as managed by the release. Defaults to `false` | `bool` | `null` | no |
 | <a name="input_timeout"></a> [timeout](#input\_timeout) | Time in seconds to wait for any individual kubernetes operation (like Jobs for hooks). Defaults to `300` seconds | `number` | `null` | no |
+| <a name="input_trust_policy_conditions"></a> [trust\_policy\_conditions](#input\_trust\_policy\_conditions) | A list of conditions to add to the role trust policy | <pre>list(object({<br/>    test     = string<br/>    values   = list(string)<br/>    variable = string<br/>  }))</pre> | `[]` | no |
 | <a name="input_upgrade_install"></a> [upgrade\_install](#input\_upgrade\_install) | If true, the provider will install the release at the specified version even if a release not controlled by the provider is present: this is equivalent to running 'helm upgrade --install' with the Helm CLI. Defaults to `true` | `bool` | `true` | no |
 | <a name="input_values"></a> [values](#input\_values) | List of values in raw yaml to pass to helm. Values will be merged, in order, as Helm does with multiple `-f` options | `list(string)` | `null` | no |
 | <a name="input_verify"></a> [verify](#input\_verify) | Verify the package before installing it. Helm uses a provenance file to verify the integrity of the chart; this must be hosted alongside the chart. For more information see the Helm Documentation. Defaults to `false` | `bool` | `null` | no |
@@ -238,6 +290,7 @@ No modules.
 | <a name="output_iam_role_unique_id"></a> [iam\_role\_unique\_id](#output\_iam\_role\_unique\_id) | Unique ID of IAM role |
 | <a name="output_name"></a> [name](#output\_name) | Name is the name of the release |
 | <a name="output_namespace"></a> [namespace](#output\_namespace) | Name of Kubernetes namespace |
+| <a name="output_pod_identity_associations"></a> [pod\_identity\_associations](#output\_pod\_identity\_associations) | Map of Pod Identity associations created |
 | <a name="output_revision"></a> [revision](#output\_revision) | Version is an int32 which represents the version of the release |
 | <a name="output_values"></a> [values](#output\_values) | The compounded values from `values` and `set*` attributes |
 | <a name="output_version"></a> [version](#output\_version) | A SemVer 2 conformant version string of the chart |
