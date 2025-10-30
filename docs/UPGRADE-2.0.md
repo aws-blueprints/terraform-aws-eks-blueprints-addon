@@ -29,7 +29,6 @@ Please consult the `tests` directory for reference configurations. If you find a
 ### Modified
 
 - Variable definitions now contain detailed object types in place of the previously used `any` type.
-- `create_role` now defaults to `true` since this is what most commonly set
 
 ### Removed
 
@@ -41,6 +40,7 @@ Please consult the `tests` directory for reference configurations. If you find a
 
     - `set_irsa_names`
     - `allow_self_assume_role`
+    - `create_role`
 
 2. Renamed variables:
 
