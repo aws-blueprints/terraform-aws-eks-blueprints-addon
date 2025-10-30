@@ -19,6 +19,7 @@ Please consult the `tests` directory for reference configurations. If you find a
   ```
 
 - The `allow_self_assume_role` variable and associated trust policy statement has been removed; the addon should not need to assume its own role.
+- Variable definitions now contain detailed object types in place of the previously used `any` type.
 
 ## Additional changes
 
