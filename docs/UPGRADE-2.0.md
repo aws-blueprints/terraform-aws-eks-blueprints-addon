@@ -54,6 +54,7 @@ Please consult the `tests` directory for reference configurations. If you find a
     - `release_timeouts`
     - `upgrade_install`
     - `set_list`
+    - `pass_credentials`
 
 4. Removed outputs:
 

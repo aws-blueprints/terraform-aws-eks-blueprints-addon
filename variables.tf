@@ -117,9 +117,9 @@ variable "namespace" {
 }
 
 variable "pass_credentials" {
-  description = "Pass credentials to all domains. Defaults to `false`"
+  description = "Pass credentials to all domains. Defaults to `true`"
   type        = bool
-  default     = null
+  default     = true
 }
 
 variable "postrender" {
