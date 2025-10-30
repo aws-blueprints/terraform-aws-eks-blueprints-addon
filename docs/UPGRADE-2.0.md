@@ -32,7 +32,7 @@ Please consult the `tests` directory for reference configurations. If you find a
 
 ### Removed
 
--
+- No additional removals beyond those listed in the backwards incompatible changes section.
 
 ### Variable and output changes
 
@@ -64,15 +64,15 @@ Please consult the `tests` directory for reference configurations. If you find a
 
 4. Removed outputs:
 
-    -
+    - None
 
 5. Renamed outputs:
 
-    -
+    - None
 
 6. Added outputs:
 
-    -
+    - `pod_identity_associations` - to expose the created EKS Pod Identity associations
 
 ## Upgrade Migrations
 
@@ -86,6 +86,8 @@ Please consult the `tests` directory for reference configurations. If you find a
 
   # Truncated for brevity, only the changed parts are shown
 
+-  create_role = true
+
 -  set_irsa_names = ["serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"]
 +  set = [
 +    {
@@ -93,9 +95,21 @@ Please consult the `tests` directory for reference configurations. If you find a
 +      value_is_iam_role_arn = true
 +    }
 +  ]
+
+-  policy_statements = [
+-    {
+-     sid       = "AllowS3ListBucket"
++  policy_statements = {
++    AllowS3ListBucket = {
+      actions   = ["s3:ListBucket"]
+      resources = ["arn:aws:s3:::my-bucket"]
+      effect    = "Allow"
+    }
++  }
+-  ]
 }
 ```
 
 ### State Move Commands
 
-TBD
+None required
