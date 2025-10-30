@@ -69,13 +69,11 @@ resource "helm_release" "this" {
 ################################################################################
 
 locals {
-  create_role = var.create && var.create_role
-
   role_name = try(coalesce(var.role_name, var.name), "")
 }
 
 data "aws_iam_policy_document" "assume" {
-  count = local.create_role ? 1 : 0
+  count = var.create ? 1 : 0
 
   # IRSA
   dynamic "statement" {
@@ -145,7 +143,7 @@ data "aws_iam_policy_document" "assume" {
 }
 
 resource "aws_iam_role" "this" {
-  count = local.create_role ? 1 : 0
+  count = var.create ? 1 : 0
 
   name        = var.role_name_use_prefix ? null : local.role_name
   name_prefix = var.role_name_use_prefix ? "${local.role_name}-" : null
@@ -161,7 +159,7 @@ resource "aws_iam_role" "this" {
 }
 
 resource "aws_iam_role_policy_attachment" "additional" {
-  for_each = { for k, v in var.role_policies : k => v if local.create_role }
+  for_each = { for k, v in var.role_policies : k => v if var.create }
 
   role       = aws_iam_role.this[0].name
   policy_arn = each.value
@@ -172,7 +170,7 @@ resource "aws_iam_role_policy_attachment" "additional" {
 ################################################################################
 
 locals {
-  create_policy = local.create_role && var.create_policy
+  create_policy = var.create && var.create_policy
 
   policy_name     = try(coalesce(var.policy_name, local.role_name), "")
   has_permissions = length(concat(var.source_policy_documents, var.override_policy_documents)) > 0 || var.policy_statements != null

@@ -107,38 +107,6 @@ module "eks_blueprints_addon" {
 }
 ```
 
-### Create Addon (Helm Release) Only
-
-```hcl
-module "eks_blueprints_addon" {
-  source = "aws-blueprints/eks-blueprints-addon/aws"
-
-  chart         = "metrics-server"
-  chart_version = "3.13.0"
-  repository    = "https://kubernetes-sigs.github.io/metrics-server/"
-  description   = "Metric server helm Chart deployment configuration"
-  namespace     = "kube-system"
-
-  values = [
-    <<-EOT
-      podDisruptionBudget:
-        maxUnavailable: 1
-      metrics:
-        enabled: true
-    EOT
-  ]
-
-  set = [
-    {
-      name  = "replicas"
-      value = 2
-    }
-  ]
-
-  create_role = false
-}
-```
-
 ### Create IAM Role for Service Account (IRSA) Only
 
 ```hcl
@@ -214,7 +182,6 @@ No modules.
 | <a name="input_create_namespace"></a> [create\_namespace](#input\_create\_namespace) | Create the namespace if it does not yet exist. Defaults to `false` | `bool` | `null` | no |
 | <a name="input_create_policy"></a> [create\_policy](#input\_create\_policy) | Whether to create an IAM policy that is attached to the IAM role created | `bool` | `true` | no |
 | <a name="input_create_release"></a> [create\_release](#input\_create\_release) | Determines whether the Helm release is created | `bool` | `true` | no |
-| <a name="input_create_role"></a> [create\_role](#input\_create\_role) | Determines whether to create an IAM role | `bool` | `true` | no |
 | <a name="input_dependency_update"></a> [dependency\_update](#input\_dependency\_update) | Runs helm dependency update before installing the chart. Defaults to `false` | `bool` | `null` | no |
 | <a name="input_description"></a> [description](#input\_description) | Set release description attribute (visible in the history) | `string` | `null` | no |
 | <a name="input_devel"></a> [devel](#input\_devel) | Use chart development versions, too. Equivalent to version '>0.0.0-0'. If version is set, this is ignored | `bool` | `null` | no |
