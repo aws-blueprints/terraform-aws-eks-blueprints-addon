@@ -77,8 +77,9 @@ locals {
 data "aws_iam_policy_document" "assume" {
   count = local.create_role ? 1 : 0
 
+  # IRSA
   dynamic "statement" {
-    for_each = var.oidc_providers != null ? var.oidc_providers : {}
+    for_each = var.irsa_oidc_providers != null ? var.irsa_oidc_providers : {}
 
     content {
       effect  = "Allow"
@@ -92,7 +93,7 @@ data "aws_iam_policy_document" "assume" {
       condition {
         test     = var.assume_role_condition_test
         variable = "${replace(statement.value.provider_arn, "/^(.*provider/)/", "")}:sub"
-        values   = ["system:serviceaccount:${try(statement.value.namespace, local.namespace)}:${statement.value.service_account}"]
+        values   = ["system:serviceaccount:${try(coalesce(statement.value.namespace, local.namespace))}:${statement.value.service_account}"]
       }
 
       # https://aws.amazon.com/premiumsupport/knowledge-center/eks-troubleshoot-oidc-and-irsa/?nc1=h_ls
@@ -100,6 +101,44 @@ data "aws_iam_policy_document" "assume" {
         test     = var.assume_role_condition_test
         variable = "${replace(statement.value.provider_arn, "/^(.*provider/)/", "")}:aud"
         values   = ["sts.amazonaws.com"]
+      }
+
+      dynamic "condition" {
+        for_each = var.trust_policy_conditions
+
+        content {
+          test     = condition.value.test
+          values   = condition.value.values
+          variable = condition.value.variable
+        }
+      }
+    }
+  }
+
+  # EKS Pod Identity
+  dynamic "statement" {
+    for_each = var.enable_pod_identity ? [1] : []
+
+    content {
+      effect = "Allow"
+      actions = [
+        "sts:AssumeRole",
+        "sts:TagSession",
+      ]
+
+      principals {
+        type        = "Service"
+        identifiers = ["pods.eks.amazonaws.com"]
+      }
+
+      dynamic "condition" {
+        for_each = var.trust_policy_conditions
+
+        content {
+          test     = condition.value.test
+          values   = condition.value.values
+          variable = condition.value.variable
+        }
       }
     }
   }
@@ -204,4 +243,27 @@ resource "aws_iam_role_policy_attachment" "this" {
 
   role       = aws_iam_role.this[0].name
   policy_arn = aws_iam_policy.this[0].arn
+}
+
+################################################################################
+# Pod Identity Association
+################################################################################
+
+resource "aws_eks_pod_identity_association" "this" {
+  for_each = { for k, v in var.pod_identity_associations : k => v if var.create && var.enable_pod_identity }
+
+  region = try(coalesce(each.value.region, var.region), null)
+
+  cluster_name         = try(coalesce(each.value.cluster_name, var.pod_identity_association_defaults.cluster_name))
+  disable_session_tags = try(coalesce(each.value.disable_session_tags, var.pod_identity_association_defaults.disable_session_tags), null)
+  namespace            = try(coalesce(each.value.namespace, var.pod_identity_association_defaults.namespace, local.namespace))
+  role_arn             = aws_iam_role.this[0].arn
+  service_account      = try(coalesce(each.value.service_account, var.pod_identity_association_defaults.service_account))
+  target_role_arn      = try(coalesce(each.value.target_role_arn, var.pod_identity_association_defaults.target_role_arn), null)
+
+  tags = merge(
+    var.tags,
+    each.value.tags,
+    var.pod_identity_association_defaults.tags,
+  )
 }

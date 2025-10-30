@@ -37,34 +37,58 @@ locals {
 # EKS Blueprints Addon
 ################################################################################
 
-module "helm_release_only" {
+module "helm_release_pod_identity" {
   source = "../"
 
-  chart         = "metrics-server"
-  chart_version = "3.13.0"
-  repository    = "https://kubernetes-sigs.github.io/metrics-server/"
-  description   = "Metric server helm Chart deployment configuration"
+  # Only one can be enabled at a time
+  create = true
+
+  chart         = "cni-metrics-helper"
+  chart_version = "1.20.4"
+  repository    = "https://aws.github.io/eks-charts"
+  description   = "A Helm chart for CNI metrics helper"
   namespace     = "kube-system"
 
   values = [
     <<-EOT
-      podDisruptionBudget:
-        maxUnavailable: 1
-      metrics:
-        enabled: true
+      image:
+        region: ${local.region}
+      env:
+        AWS_CLUSTER_ID: ${module.eks.cluster_name}
+      serviceAccount:
+        name: cni-metrics-helper
     EOT
   ]
 
-  set = [
-    {
-      name  = "replicas"
-      value = 2
+  # IAM role
+  role_name = "cni-metrics-helper"
+  policy_statements = {
+    CloudWatchWrite = {
+      actions = [
+        "cloudwatch:PutMetricData"
+      ]
+      resources = ["*"]
     }
-  ]
+  }
+
+  # EKS Pod Identity
+  enable_pod_identity = true
+  pod_identity_associations = {
+    this = {
+      cluster_name = module.eks.cluster_name
+      # namespace is inherited from chart
+      service_account = "cni-metrics-helper"
+    }
+  }
+
+  tags = local.tags
 }
 
 module "helm_release_irsa" {
   source = "../"
+
+  # Only one can be enabled at a time
+  create = false
 
   chart         = "cni-metrics-helper"
   chart_version = "1.20.4"
@@ -91,9 +115,8 @@ module "helm_release_irsa" {
     }
   ]
 
-  # IAM role for service account (IRSA)
-  create_role = true
-  role_name   = "cni-metrics-helper"
+  # IAM role
+  role_name = "cni-metrics-helper"
   policy_statements = {
     CloudWatchWrite = {
       actions = [
@@ -103,15 +126,44 @@ module "helm_release_irsa" {
     }
   }
 
-  oidc_providers = {
+  # Trust policy for IRSA
+  irsa_oidc_providers = {
     this = {
-      provider_arn    = module.eks.oidc_provider_arn
-      namespace       = "kube-system"
+      provider_arn = module.eks.oidc_provider_arn
+      # namespace is inherited from chart
       service_account = "cni-metrics-helpere"
     }
   }
 
   tags = local.tags
+}
+
+module "helm_release_only" {
+  source = "../"
+
+  chart         = "metrics-server"
+  chart_version = "3.13.0"
+  repository    = "https://kubernetes-sigs.github.io/metrics-server/"
+  description   = "Metric server helm Chart deployment configuration"
+  namespace     = "kube-system"
+
+  values = [
+    <<-EOT
+      podDisruptionBudget:
+        maxUnavailable: 1
+      metrics:
+        enabled: true
+    EOT
+  ]
+
+  set = [
+    {
+      name  = "replicas"
+      value = 2
+    }
+  ]
+
+  create_role = false
 }
 
 module "irsa_only" {
@@ -121,13 +173,12 @@ module "irsa_only" {
   create_release = false
 
   # IAM role for service account (IRSA)
-  create_role = true
-  role_name   = "aws-vpc-cni-ipv4"
+  role_name = "aws-vpc-cni-ipv4"
   role_policies = {
     AmazonEKS_CNI_Policy = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
   }
 
-  oidc_providers = {
+  irsa_oidc_providers = {
     this = {
       provider_arn    = module.eks.oidc_provider_arn
       namespace       = "kube-system"
@@ -161,7 +212,10 @@ module "eks" {
 
   # EKS Addons
   addons = {
-    coredns    = {}
+    coredns = {}
+    eks-pod-identity-agent = {
+      before_compute = true
+    }
     kube-proxy = {}
     vpc-cni = {
       before_compute = true

@@ -57,6 +57,11 @@ output "helm_release_only_iam_role_unique_id" {
   value       = module.helm_release_only.iam_role_unique_id
 }
 
+output "helm_release_only_pod_identity_associations" {
+  description = "Map of Pod Identity associations created"
+  value       = module.helm_release_only.pod_identity_associations
+}
+
 ################################################################################
 # Helm Release & IRSA
 ################################################################################
@@ -116,6 +121,11 @@ output "helm_release_irsa_iam_role_unique_id" {
   value       = module.helm_release_irsa.iam_role_unique_id
 }
 
+output "helm_release_irsa_pod_identity_associations" {
+  description = "Map of Pod Identity associations created"
+  value       = module.helm_release_irsa.pod_identity_associations
+}
+
 ################################################################################
 # IRSA Only
 ################################################################################
@@ -173,4 +183,73 @@ output "irsa_only_iam_role_path" {
 output "irsa_only_iam_role_unique_id" {
   description = "Unique ID of IAM role"
   value       = module.irsa_only.iam_role_unique_id
+}
+
+output "irsa_only_pod_identity_associations" {
+  description = "Map of Pod Identity associations created"
+  value       = module.irsa_only.pod_identity_associations
+}
+
+################################################################################
+# Helm release Pod Identity
+################################################################################
+
+output "helm_release_pod_identity_chart" {
+  description = "The name of the chart"
+  value       = module.helm_release_pod_identity.chart
+}
+
+output "helm_release_pod_identity_name" {
+  description = "Name is the name of the release"
+  value       = module.helm_release_pod_identity.name
+}
+
+output "helm_release_pod_identity_namespace" {
+  description = "Name of Kubernetes namespace"
+  value       = module.helm_release_pod_identity.namespace
+}
+
+output "helm_release_pod_identity_revision" {
+  description = "Version is an int32 which represents the version of the release"
+  value       = module.helm_release_pod_identity.revision
+}
+
+output "helm_release_pod_identity_version" {
+  description = "A SemVer 2 conformant version string of the chart"
+  value       = module.helm_release_pod_identity.version
+}
+
+output "helm_release_pod_identity_app_version" {
+  description = "The version number of the application being deployed"
+  value       = module.helm_release_pod_identity.app_version
+}
+
+output "helm_release_pod_identity_values" {
+  description = "The compounded values from `values` and `set*` attributes"
+  value       = module.helm_release_pod_identity.values
+}
+
+output "helm_release_pod_identity_iam_role_arn" {
+  description = "ARN of IAM role"
+  value       = module.helm_release_pod_identity.iam_role_arn
+}
+
+output "helm_release_pod_identity_iam_role_name" {
+  description = "Name of IAM role"
+  value       = module.helm_release_pod_identity.iam_role_name
+}
+
+output "helm_release_pod_identity_iam_role_path" {
+  description = "Path of IAM role"
+  value       = module.helm_release_pod_identity.iam_role_path
+}
+
+output "helm_release_pod_identity_iam_role_unique_id" {
+  description = "Unique ID of IAM role"
+  value       = module.helm_release_pod_identity.iam_role_unique_id
+}
+
+output "helm_release_pod_identity_associations" {
+  description = "Map of Pod Identity associations created"
+  value       = module.helm_release_pod_identity.pod_identity_associations
 }

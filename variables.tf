@@ -4,6 +4,12 @@ variable "create" {
   default     = true
 }
 
+variable "region" {
+  description = "Region where the *regional resource(s) will be managed. Defaults to the Region set in the provider configuration. Currently only applies to the EKS Pod Identity association(s)"
+  type        = string
+  default     = null
+}
+
 variable "tags" {
   description = "A map of tags to add to all resources"
   type        = map(string)
@@ -315,7 +321,7 @@ variable "release_timeouts" {
 variable "create_role" {
   description = "Determines whether to create an IAM role"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "role_name" {
@@ -354,16 +360,6 @@ variable "role_policies" {
   default     = {}
 }
 
-variable "oidc_providers" {
-  description = "Map of OIDC providers where each provider map should contain the `provider_arn`, and `service_accounts`"
-  type = map(object({
-    provider_arn    = string
-    service_account = string
-    namespace       = optional(string)
-  }))
-  default = null
-}
-
 variable "max_session_duration" {
   description = "Maximum CLI/API session duration in seconds between 3600 and 43200"
   type        = number
@@ -374,6 +370,26 @@ variable "assume_role_condition_test" {
   description = "Name of the [IAM condition operator](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_condition_operators.html) to evaluate when assuming the role"
   type        = string
   default     = "StringEquals"
+}
+
+variable "irsa_oidc_providers" {
+  description = "Map of OIDC providers used to create the appropriate trust policy for IAM role for service account (IRSA). If not using IRSA, leave this as `null`"
+  type = map(object({
+    provider_arn    = string
+    service_account = string
+    namespace       = optional(string)
+  }))
+  default = null
+}
+
+variable "trust_policy_conditions" {
+  description = "A list of conditions to add to the role trust policy"
+  type = list(object({
+    test     = string
+    values   = list(string)
+    variable = string
+  }))
+  default = []
 }
 
 ################################################################################
@@ -446,4 +462,42 @@ variable "policy_description" {
   description = "IAM policy description"
   type        = string
   default     = null
+}
+
+################################################################################
+# Pod Identity Association
+################################################################################
+
+variable "enable_pod_identity" {
+  description = "Whether to add a trust relationship for EKS Pod Identity (pods.eks.amazonaws.com)"
+  type        = bool
+  default     = false
+}
+
+variable "pod_identity_associations" {
+  description = "Map of EKS Pod Identity associations to be created (map of maps)"
+  type = map(object({
+    cluster_name         = optional(string)
+    disable_session_tags = optional(bool)
+    namespace            = optional(string)
+    service_account      = optional(string)
+    role_arn             = optional(string)
+    target_role_arn      = optional(string)
+    tags                 = optional(map(string), {})
+  }))
+  default = {}
+}
+
+variable "pod_identity_association_defaults" {
+  description = "Default values used across all EKS Pod Identity associations created unless a more specific value is provided"
+  type = object({
+    cluster_name         = optional(string)
+    disable_session_tags = optional(bool)
+    namespace            = optional(string)
+    service_account      = optional(string)
+    role_arn             = optional(string)
+    target_role_arn      = optional(string)
+    tags                 = optional(map(string), {})
+  })
+  default = {}
 }

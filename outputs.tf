@@ -74,3 +74,12 @@ output "iam_policy" {
   description = "The policy document"
   value       = try(aws_iam_policy.this[0].policy, null)
 }
+
+################################################################################
+# Pod Identity Association
+################################################################################
+
+output "pod_identity_associations" {
+  description = "Map of Pod Identity associations created"
+  value       = aws_eks_pod_identity_association.this
+}
