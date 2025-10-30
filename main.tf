@@ -78,7 +78,7 @@ data "aws_iam_policy_document" "assume" {
   count = local.create_role ? 1 : 0
 
   dynamic "statement" {
-    for_each = var.oidc_providers
+    for_each = var.oidc_providers != null ? var.oidc_providers : {}
 
     content {
       effect  = "Allow"
@@ -135,29 +135,29 @@ resource "aws_iam_role_policy_attachment" "additional" {
 locals {
   create_policy = local.create_role && var.create_policy
 
-  policy_name = try(coalesce(var.policy_name, local.role_name), "")
-  perms       = concat(var.source_policy_documents, var.override_policy_documents, var.policy_statements)
+  policy_name     = try(coalesce(var.policy_name, local.role_name), "")
+  has_permissions = length(concat(var.source_policy_documents, var.override_policy_documents)) > 0 || var.policy_statements != null
 }
 
 data "aws_iam_policy_document" "this" {
-  count = local.create_policy && length(local.perms) > 0 ? 1 : 0
+  count = local.create_policy && local.has_permissions ? 1 : 0
 
   source_policy_documents   = var.source_policy_documents
   override_policy_documents = var.override_policy_documents
 
   dynamic "statement" {
-    for_each = var.policy_statements
+    for_each = var.policy_statements != null ? var.policy_statements : {}
 
     content {
-      sid           = try(statement.value.sid, null)
-      actions       = try(statement.value.actions, null)
-      not_actions   = try(statement.value.not_actions, null)
-      effect        = try(statement.value.effect, null)
-      resources     = try(statement.value.resources, null)
-      not_resources = try(statement.value.not_resources, null)
+      sid           = try(coalesce(statement.value.sid, statement.key))
+      actions       = statement.value.actions
+      not_actions   = statement.value.not_actions
+      effect        = statement.value.effect
+      resources     = statement.value.resources
+      not_resources = statement.value.not_resources
 
       dynamic "principals" {
-        for_each = try(statement.value.principals, [])
+        for_each = statement.value.principals != null ? statement.value.principals : []
 
         content {
           type        = principals.value.type
@@ -166,7 +166,7 @@ data "aws_iam_policy_document" "this" {
       }
 
       dynamic "not_principals" {
-        for_each = try(statement.value.not_principals, [])
+        for_each = statement.value.not_principals != null ? statement.value.not_principals : []
 
         content {
           type        = not_principals.value.type
@@ -175,7 +175,7 @@ data "aws_iam_policy_document" "this" {
       }
 
       dynamic "condition" {
-        for_each = try(statement.value.conditions, [])
+        for_each = statement.value.condition != null ? statement.value.condition : []
 
         content {
           test     = condition.value.test
@@ -188,7 +188,7 @@ data "aws_iam_policy_document" "this" {
 }
 
 resource "aws_iam_policy" "this" {
-  count = local.create_policy && length(local.perms) > 0 ? 1 : 0
+  count = local.create_policy && local.has_permissions ? 1 : 0
 
   name        = var.policy_name_use_prefix ? null : local.policy_name
   name_prefix = var.policy_name_use_prefix ? "${local.policy_name}-" : null
@@ -200,7 +200,7 @@ resource "aws_iam_policy" "this" {
 }
 
 resource "aws_iam_role_policy_attachment" "this" {
-  count = local.create_policy && length(local.perms) > 0 ? 1 : 0
+  count = local.create_policy && local.has_permissions ? 1 : 0
 
   role       = aws_iam_role.this[0].name
   policy_arn = aws_iam_policy.this[0].arn

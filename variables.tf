@@ -356,8 +356,12 @@ variable "role_policies" {
 
 variable "oidc_providers" {
   description = "Map of OIDC providers where each provider map should contain the `provider_arn`, and `service_accounts`"
-  type        = any
-  default     = {}
+  type = map(object({
+    provider_arn    = string
+    service_account = string
+    namespace       = optional(string)
+  }))
+  default = null
 }
 
 variable "max_session_duration" {
@@ -395,9 +399,29 @@ variable "override_policy_documents" {
 }
 
 variable "policy_statements" {
-  description = "List of IAM policy [statements](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document#statement)"
-  type        = any
-  default     = []
+  description = "A map of IAM policy [statements](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document#statement) for custom permission usage"
+  type = map(object({
+    sid           = optional(string)
+    actions       = optional(list(string))
+    not_actions   = optional(list(string))
+    effect        = optional(string, "Allow")
+    resources     = optional(list(string))
+    not_resources = optional(list(string))
+    principals = optional(list(object({
+      type        = string
+      identifiers = list(string)
+    })))
+    not_principals = optional(list(object({
+      type        = string
+      identifiers = list(string)
+    })))
+    condition = optional(list(object({
+      test     = string
+      variable = string
+      values   = list(string)
+    })))
+  }))
+  default = null
 }
 
 variable "policy_name" {
