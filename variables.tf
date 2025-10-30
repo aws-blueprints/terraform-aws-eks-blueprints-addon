@@ -318,12 +318,6 @@ variable "release_timeouts" {
 # IAM Role for Service Account(s) (IRSA)
 ################################################################################
 
-variable "create_role" {
-  description = "Determines whether to create an IAM role"
-  type        = bool
-  default     = true
-}
-
 variable "role_name" {
   description = "Name of IAM role"
   type        = string

@@ -138,34 +138,6 @@ module "helm_release_irsa" {
   tags = local.tags
 }
 
-module "helm_release_only" {
-  source = "../"
-
-  chart         = "metrics-server"
-  chart_version = "3.13.0"
-  repository    = "https://kubernetes-sigs.github.io/metrics-server/"
-  description   = "Metric server helm Chart deployment configuration"
-  namespace     = "kube-system"
-
-  values = [
-    <<-EOT
-      podDisruptionBudget:
-        maxUnavailable: 1
-      metrics:
-        enabled: true
-    EOT
-  ]
-
-  set = [
-    {
-      name  = "replicas"
-      value = 2
-    }
-  ]
-
-  create_role = false
-}
-
 module "irsa_only" {
   source = "../"
 
