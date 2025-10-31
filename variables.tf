@@ -104,10 +104,11 @@ variable "lint" {
   default     = null
 }
 
+# https://github.com/hashicorp/terraform-provider-helm/issues/1571
 variable "max_history" {
-  description = "Maximum number of release versions stored per release. Defaults to `0` (no limit)"
+  description = "Maximum number of release versions stored per release. Defaults to `5`"
   type        = number
-  default     = null
+  default     = 5
 }
 
 variable "name" {

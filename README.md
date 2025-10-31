@@ -193,7 +193,7 @@ No modules.
 | <a name="input_irsa_oidc_providers"></a> [irsa\_oidc\_providers](#input\_irsa\_oidc\_providers) | Map of OIDC providers used to create the appropriate trust policy for IAM role for service account (IRSA). If not using IRSA, leave this as `null` | <pre>map(object({<br/>    provider_arn    = string<br/>    service_account = string<br/>    namespace       = optional(string)<br/>  }))</pre> | `null` | no |
 | <a name="input_keyring"></a> [keyring](#input\_keyring) | Location of public keys used for verification. Used only if verify is true. Defaults to `/.gnupg/pubring.gpg` in the location set by `home` | `string` | `null` | no |
 | <a name="input_lint"></a> [lint](#input\_lint) | Run the helm chart linter during the plan. Defaults to `false` | `bool` | `null` | no |
-| <a name="input_max_history"></a> [max\_history](#input\_max\_history) | Maximum number of release versions stored per release. Defaults to `0` (no limit) | `number` | `null` | no |
+| <a name="input_max_history"></a> [max\_history](#input\_max\_history) | Maximum number of release versions stored per release. Defaults to `5` | `number` | `5` | no |
 | <a name="input_max_session_duration"></a> [max\_session\_duration](#input\_max\_session\_duration) | Maximum CLI/API session duration in seconds between 3600 and 43200 | `number` | `null` | no |
 | <a name="input_name"></a> [name](#input\_name) | Name of the Helm release | `string` | `""` | no |
 | <a name="input_namespace"></a> [namespace](#input\_namespace) | The namespace to install the release into. Defaults to `default` | `string` | `null` | no |
