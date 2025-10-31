@@ -2,6 +2,7 @@ variable "create" {
   description = "Controls if resources should be created (affects all resources)"
   type        = bool
   default     = true
+  nullable    = false
 }
 
 variable "region" {
@@ -14,6 +15,7 @@ variable "tags" {
   description = "A map of tags to add to all resources"
   type        = map(string)
   default     = {}
+  nullable    = false
 }
 
 ################################################################################
@@ -24,6 +26,7 @@ variable "create_release" {
   description = "Determines whether the Helm release is created"
   type        = bool
   default     = true
+  nullable    = false
 }
 
 variable "atomic" {
@@ -109,6 +112,7 @@ variable "max_history" {
   description = "Maximum number of release versions stored per release. Defaults to `5`"
   type        = number
   default     = 5
+  nullable    = false
 }
 
 variable "name" {
@@ -127,6 +131,7 @@ variable "pass_credentials" {
   description = "Pass credentials to all domains. Defaults to `true`"
   type        = bool
   default     = true
+  nullable    = false
 }
 
 variable "postrender" {
@@ -272,6 +277,7 @@ variable "upgrade_install" {
   description = " If true, the provider will install the release at the specified version even if a release not controlled by the provider is present: this is equivalent to running 'helm upgrade --install' with the Helm CLI. Defaults to `true`"
   type        = bool
   default     = true
+  nullable    = false
 }
 
 variable "values" {
@@ -296,6 +302,7 @@ variable "wait" {
   description = "Will wait until all resources are in a ready state before marking the release as successful. If set to `true`, it will wait for as long as `timeout`. If set to `null` fallback on `300s` timeout.  Defaults to `false`"
   type        = bool
   default     = false
+  nullable    = false
 }
 
 variable "wait_for_jobs" {
@@ -329,12 +336,14 @@ variable "role_name_use_prefix" {
   description = "Determines whether the IAM role name (`role_name`) is used as a prefix"
   type        = bool
   default     = true
+  nullable    = false
 }
 
 variable "role_path" {
   description = "Path of IAM role"
   type        = string
   default     = "/"
+  nullable    = false
 }
 
 variable "role_permissions_boundary_arn" {
@@ -353,6 +362,7 @@ variable "role_policies" {
   description = "Policies to attach to the IAM role in `{'static_name' = 'policy_arn'}` format"
   type        = map(string)
   default     = {}
+  nullable    = false
 }
 
 variable "max_session_duration" {
@@ -365,6 +375,7 @@ variable "assume_role_condition_test" {
   description = "Name of the [IAM condition operator](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_condition_operators.html) to evaluate when assuming the role"
   type        = string
   default     = "StringEquals"
+  nullable    = false
 }
 
 variable "irsa_oidc_providers" {
@@ -384,7 +395,8 @@ variable "trust_policy_conditions" {
     values   = list(string)
     variable = string
   }))
-  default = []
+  default  = []
+  nullable = false
 }
 
 ################################################################################
@@ -395,18 +407,21 @@ variable "create_policy" {
   description = "Whether to create an IAM policy that is attached to the IAM role created"
   type        = bool
   default     = true
+  nullable    = false
 }
 
 variable "source_policy_documents" {
   description = "List of IAM policy documents that are merged together into the exported document. Statements must have unique `sid`s"
   type        = list(string)
   default     = []
+  nullable    = false
 }
 
 variable "override_policy_documents" {
   description = "List of IAM policy documents that are merged together into the exported document. In merging, statements with non-blank `sid`s will override statements with the same `sid`"
   type        = list(string)
   default     = []
+  nullable    = false
 }
 
 variable "policy_statements" {
@@ -445,6 +460,7 @@ variable "policy_name_use_prefix" {
   description = "Determines whether the IAM policy name (`policy_name`) is used as a prefix"
   type        = bool
   default     = true
+  nullable    = false
 }
 
 variable "policy_path" {
@@ -467,6 +483,7 @@ variable "enable_pod_identity" {
   description = "Whether to add a trust relationship for EKS Pod Identity (pods.eks.amazonaws.com)"
   type        = bool
   default     = false
+  nullable    = false
 }
 
 variable "pod_identity_associations" {
@@ -480,7 +497,8 @@ variable "pod_identity_associations" {
     target_role_arn      = optional(string)
     tags                 = optional(map(string), {})
   }))
-  default = {}
+  default  = {}
+  nullable = false
 }
 
 variable "pod_identity_association_defaults" {
@@ -494,5 +512,6 @@ variable "pod_identity_association_defaults" {
     target_role_arn      = optional(string)
     tags                 = optional(map(string), {})
   })
-  default = {}
+  default  = {}
+  nullable = false
 }
